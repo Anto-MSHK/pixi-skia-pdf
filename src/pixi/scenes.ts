@@ -9,6 +9,7 @@
  */
 import { Container, Graphics, Sprite, Texture } from 'pixi.js-legacy';
 import type { DisplayObject } from 'pixi.js-legacy';
+import { hasVisibleFill, strokeContains } from './graphicsHit';
 
 /** Колбэк логирования событий (общий для обоих канвасов). */
 export type EventLogger = (message: string) => void;
@@ -45,6 +46,11 @@ function makeInteractive(
 ): void {
   node.eventMode = 'static';
   node.cursor = 'pointer';
+  // Линии (Graphics без заливки) Pixi не ловит по умолчанию — задаём hitArea
+  // с проверкой попадания по обводке (тот же критерий, что у Skia-моста).
+  if (node instanceof Graphics && !hasVisibleFill(node)) {
+    node.hitArea = { contains: (x: number, y: number) => strokeContains(node, x, y) };
+  }
   node.on('pointerdown', () => {
     log(`▼ pointerdown → ${label}`);
     onPick?.(node);
@@ -75,9 +81,11 @@ function buildScene1(log: EventLogger, onPick?: PickHandler): Container {
 
   g3.lineStyle(10, 0xffffff, 1).moveTo(0, 0).lineTo(150, 100);
   g3.angle = -20;
+  makeInteractive(g3, 'g3 (линия)', log, onPick);
 
   g4.lineStyle(10, 0xffff00, 1).moveTo(0, 70).lineTo(150, -30);
   g4.angle = 20;
+  makeInteractive(g4, 'g4 (линия)', log, onPick);
 
   subContainer.position.set(135, 110);
   subContainer.addChild(g3, g4);
@@ -165,6 +173,7 @@ function buildScene3(log: EventLogger, onPick?: PickHandler): Container {
   for (let x = 40; x <= 720; x += 20) {
     wave.lineTo(x, 440 + Math.sin(x / 40) * 30);
   }
+  makeInteractive(wave, 'волна (линия)', log, onPick);
 
   root.addChild(c1, c2, star, wave);
   return root;

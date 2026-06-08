@@ -9,6 +9,7 @@
  */
 import { Matrix, Point } from 'pixi.js-legacy';
 import type { Container, DisplayObject, Graphics, Sprite } from 'pixi.js-legacy';
+import { strokeContains } from '../pixi/graphicsHit';
 
 function isInteractive(node: DisplayObject): boolean {
   return node.eventMode === 'static' || node.eventMode === 'dynamic';
@@ -27,10 +28,11 @@ function isSprite(node: DisplayObject): node is Sprite {
 function hitNode(node: DisplayObject, local: Point): boolean {
   if (isGraphics(node)) {
     for (const data of node.geometry.graphicsData) {
-      // Учитываем только видимые заливки (надёжный hit-test «по телу»).
+      // Заливка — hit-test «по телу».
       if (data.fillStyle.visible && data.shape.contains(local.x, local.y)) return true;
     }
-    return false;
+    // Линии без заливки — hit-test по обводке (тот же критерий, что у Pixi).
+    return strokeContains(node, local.x, local.y);
   }
   if (isSprite(node)) {
     const { width, height } = node.texture.orig;
