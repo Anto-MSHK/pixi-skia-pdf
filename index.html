@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixi → Skia → PDF</title>
+    <link rel="stylesheet" href="/src/ui/styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>PIXI.Container → Skia (CanvasKit) → векторный PDF</h1>
+      <p class="app-subtitle">
+        Слева — рендер Pixi (canvas, <code>forceCanvas: true</code>). Справа — та
+        же сцена, отрисованная собственной обёрткой через Skia. Экспорт в PDF
+        идёт через Skia PDF backend (векторно; спрайты — bitmap).
+      </p>
+    </header>
+
+    <main class="app-main">
+      <section class="stage">
+        <div class="stage__head">
+          <h2>PIXI.js</h2>
+          <span class="badge" id="pixi-status">инициализация…</span>
+        </div>
+        <div class="canvas-wrap" id="pixi-canvas-wrap"></div>
+      </section>
+
+      <section class="stage">
+        <div class="stage__head">
+          <h2>Skia (CanvasKit)</h2>
+          <span class="badge" id="skia-status">инициализация…</span>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="skia-canvas"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <section class="controls">
+      <button id="btn-random" type="button">＋ Случайная фигура/линия</button>
+      <button id="btn-next-scene" type="button">⟳ Следующая сцена</button>
+      <label class="toggle">
+        <input type="checkbox" id="chk-autoplay" />
+        Автопереключение сцен (3 c)
+      </label>
+      <button id="btn-export-pdf" type="button" class="primary">⬇ Экспорт в PDF</button>
+    </section>
+
+    <section class="log">
+      <div class="log__head">События (<code>pointerdown</code> / <code>pointerup</code>) — работают на обоих канвасах</div>
+      <ul id="event-log" class="log__list"></ul>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

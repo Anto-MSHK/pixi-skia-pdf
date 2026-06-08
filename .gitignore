@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+
+# Артефакты сборки Skia (промежуточные). Сами собранные canvaskit.js/.wasm
+# в public/canvaskit/ КОММИТЯТСЯ — они нужны для деплоя на GitHub Pages.
+build-canvaskit/out/
+build-canvaskit/build.log
+
+.DS_Store
+.vscode/

@@ -1,0 +1,21 @@
+{
+  "name": "pixi-skia-pdf",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Рендер PIXI.Container средствами Skia (CanvasKit/WASM) и экспорт сцены в векторный PDF через Skia PDF backend.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "build:canvaskit": "bash build-canvaskit/run-build.sh"
+  },
+  "dependencies": {
+    "pixi.js-legacy": "7.2.4"
+  },
+  "devDependencies": {
+    "canvaskit-wasm": "^0.39.1",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0"
+  }
+}
