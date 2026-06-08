@@ -4,7 +4,7 @@
 собственная обёртка рендерит произвольный `PIXI.Container` средствами Skia и
 экспортирует сцену в **векторный PDF** через Skia PDF backend.
 
-🔗 **Live demo:** _добавьте ссылку на GitHub Pages после первого деплоя_
+🔗 **Live demo:** https://anto-mshk.github.io/pixi-skia-pdf/
 
 | PIXI.js (canvas, `forceCanvas`) | Skia (CanvasKit) — та же сцена |
 | --- | --- |
