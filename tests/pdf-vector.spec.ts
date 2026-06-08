@@ -38,11 +38,16 @@ async function analyzePdf(page: Page, scenes = false) {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  // Ждём загрузки кастомной сборки CanvasKit с PDF backend.
-  await expect(page.getByText('PDF ✓')).toBeVisible({ timeout: 30_000 });
+  // Ждём загрузки кастомной сборки CanvasKit: dev-хук экспорта появляется
+  // только после успешной инициализации CanvasKit с PDF backend.
+  await page.waitForFunction(
+    () => typeof (window as unknown as { __exportPdfBytes?: unknown }).__exportPdfBytes === 'function',
+    null,
+    { timeout: 30_000 },
+  );
 });
 
-test('PDF backend доступен (кастомная сборка CanvasKit загружена)', async ({ page }) => {
+test('PDF backend доступен — кнопка экспорта активна', async ({ page }) => {
   await expect(page.locator('#btn-export-pdf')).toBeEnabled();
 });
 

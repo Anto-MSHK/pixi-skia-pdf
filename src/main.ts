@@ -28,13 +28,6 @@ function createLogger(): (msg: string) => void {
   };
 }
 
-function setStatus(id: string, text: string, kind: 'ok' | 'warn' | '' = ''): void {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  el.className = `badge${kind ? ' ' + kind : ''}`;
-}
-
 async function main(): Promise<void> {
   const log = createLogger();
 
@@ -51,7 +44,6 @@ async function main(): Promise<void> {
   const pixiWrap = document.getElementById('pixi-canvas-wrap')!;
   pixiWrap.appendChild(app.view as HTMLCanvasElement);
   app.stage.eventMode = 'static';
-  setStatus('pixi-status', 'готово', 'ok');
 
   // Состояние рендера и подсветки выделения.
   let skia: SkiaStage | null = null;
@@ -87,7 +79,6 @@ async function main(): Promise<void> {
     const ck = await loadCanvasKit();
     skia = new SkiaStage(ck, skiaCanvas, WIDTH, HEIGHT);
     pdfReady = isPdfSupported(ck);
-    setStatus('skia-status', pdfReady ? 'готово · PDF ✓' : 'готово · без PDF', pdfReady ? 'ok' : 'warn');
     renderSkia();
 
     // Кнопка экспорта в PDF.
@@ -146,7 +137,6 @@ async function main(): Promise<void> {
         exportScenesToPdf(ck, scenes, { width: WIDTH, height: HEIGHT });
     }
   } catch (err) {
-    setStatus('skia-status', 'ошибка', 'warn');
     log(`✗ CanvasKit не загрузился: ${(err as Error).message}`);
   }
 

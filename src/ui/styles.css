@@ -69,25 +69,6 @@ code {
   margin: 0;
 }
 
-.badge {
-  font-size: 0.75rem;
-  color: var(--muted);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 2px 10px;
-}
-
-.badge.ok {
-  color: #4ade80;
-  border-color: #166534;
-}
-
-.badge.warn {
-  color: #fbbf24;
-  border-color: #92400e;
-}
-
 .canvas-wrap {
   background: #fff;
   border-radius: 8px;
