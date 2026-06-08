@@ -24,16 +24,49 @@ apt-get update -qq
 apt-get install -y -qq \
   git python3 python3-distutils curl ca-certificates \
   build-essential clang lbzip2 xz-utils unzip \
+  default-jre-headless \
   >/dev/null
+# default-jre-headless нужен для финального шага линковки: release-сборка
+# CanvasKit минифицирует JS через Google Closure Compiler (--closure=1),
+# который запускается на Java. Без JRE линковка падает с
+# "closure compiler ... did not execute properly" (exit 254).
 ln -sf /usr/bin/python3 /usr/local/bin/python || true
 
 echo "==> [2/6] Клонирование Skia ($SKIA_BRANCH, depth=1)"
 cd /work
-git clone --depth 1 --branch "$SKIA_BRANCH" "$SKIA_REPO" skia
+# Резюмируемость: если /work/skia уже склонирован (персистентный том),
+# не клонируем заново — это позволяет повторно запускать сборку после
+# сетевых сбоев без перекачивания всего репозитория.
+if [ ! -d skia/.git ]; then
+  git clone --depth 1 --branch "$SKIA_BRANCH" "$SKIA_REPO" skia
+else
+  echo "    skia уже склонирован — пропускаем."
+fi
 cd skia
 
-echo "==> [3/6] git-sync-deps (зависимости Skia — это долго)"
-python3 tools/git-sync-deps
+echo "==> [3/6] git-sync-deps --deep (зависимости Skia — это долго)"
+# Флаг --deep ОБЯЗАТЕЛЕН: часть зеркал Skia (libavif на skia.googlesource.com,
+# libjxl/jpeg-xl на chromium.googlesource.com и др.) стабильно отдают
+# "remote transport reported error" на shallow-клон (--depth=1), из-за чего
+# git-sync-deps падает с "Thread failure detected". Полный (не-shallow) клон
+# тех же зеркал работает. Для уже скачанных репозиториев --deep не делает
+# повторной загрузки: нужный коммит уже на месте → git checkout проходит, fetch
+# пропускается. То есть полный клон выполняется только для недостающих депов.
+# git-sync-deps идемпотентен; на случай транзиентных сбоев повторяем до 6 раз.
+sync_ok=0
+for attempt in 1 2 3 4 5 6; do
+  echo "    git-sync-deps: попытка $attempt/6"
+  if python3 tools/git-sync-deps --deep; then
+    sync_ok=1
+    break
+  fi
+  echo "    попытка $attempt не удалась, пауза 15с и повтор..."
+  sleep 15
+done
+if [ "$sync_ok" -ne 1 ]; then
+  echo "ОШИБКА: git-sync-deps не прошёл за 6 попыток." >&2
+  exit 1
+fi
 
 echo "==> [4/6] activate-emsdk (установка нужной версии emscripten)"
 python3 bin/activate-emsdk

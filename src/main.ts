@@ -80,19 +80,30 @@ async function main(): Promise<void> {
       btnPdf.title = 'Текущая сборка CanvasKit без PDF. Соберите кастомную: npm run build:canvaskit';
       log('⚠ PDF backend недоступен — загружена сток-сборка CanvasKit.');
     }
+    const exportCurrentPdf = (uncompressed = false) =>
+      exportContainerToPdf(ck, current, {
+        width: WIDTH,
+        height: HEIGHT,
+        title: scenes[sceneIndex].name,
+        compressionLevel: uncompressed ? ck.PDFCompressionLevel.None : undefined,
+      });
+
     btnPdf.addEventListener('click', () => {
       try {
-        const bytes = exportContainerToPdf(ck, current, {
-          width: WIDTH,
-          height: HEIGHT,
-          title: scenes[sceneIndex].name,
-        });
+        const bytes = exportCurrentPdf();
         downloadPdf(bytes, `pixi-skia-scene-${sceneIndex + 1}.pdf`);
         log(`⬇ PDF сгенерирован (${(bytes.length / 1024).toFixed(1)} КБ)`);
       } catch (err) {
         log(`✗ Ошибка экспорта PDF: ${(err as Error).message}`);
       }
     });
+
+    // Dev-only хук для e2e-проверки: возвращает байты PDF текущей сцены.
+    // В прод-сборку не попадает (вырезается по import.meta.env.DEV).
+    if (import.meta.env.DEV) {
+      (window as unknown as { __exportPdfBytes?: () => Uint8Array }).__exportPdfBytes =
+        exportCurrentPdf;
+    }
   } catch (err) {
     setStatus('skia-status', 'ошибка', 'warn');
     log(`✗ CanvasKit не загрузился: ${(err as Error).message}`);

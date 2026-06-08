@@ -32,6 +32,22 @@ declare module 'canvaskit-wasm' {
     rasterDPI?: number;
     PDFA?: boolean;
     compressionLevel?: object;
+    /**
+     * Корневой тег структуры документа (для тегированного/доступного PDF).
+     * В этой сборке его наличие также обязательно, чтобы обёртка заполнила
+     * внутреннее поле _rootTag (иначе embind падает на "Missing field").
+     */
+    rootTag?: PDFTagNodeInit;
+  }
+
+  /** Узел дерева тегов PDF (структура документа). */
+  interface PDFTagNodeInit {
+    id?: number;
+    type?: string;
+    alt?: string;
+    language?: string;
+    attributes?: object[];
+    children?: PDFTagNodeInit[];
   }
 
   /** PDF-документ Skia (SkDocument). */

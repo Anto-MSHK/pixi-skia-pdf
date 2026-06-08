@@ -79,7 +79,13 @@ export function loadCanvasKit(): Promise<CanvasKit> {
   return cached;
 }
 
-/** true, если загруженная сборка поддерживает экспорт в PDF. */
+/**
+ * true, если загруженная сборка поддерживает экспорт в PDF.
+ *
+ * Надёжный признак — наличие функции MakePDFDocument: именно её добавляют
+ * PDF-биндинги нашей кастомной сборки. Флаг ck.pdf форк не выставляет, поэтому
+ * на него не опираемся (сток-сборка функции не имеет — там вернётся false).
+ */
 export function isPdfSupported(ck: CanvasKit): boolean {
-  return ck.pdf === true && typeof ck.MakePDFDocument === 'function';
+  return typeof ck.MakePDFDocument === 'function';
 }

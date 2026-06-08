@@ -17,6 +17,8 @@ export interface PdfExportOptions {
   /** Высота страницы в PDF-точках. */
   height: number;
   title?: string;
+  /** Уровень сжатия содержимого PDF (по умолчанию — сжатие Skia). */
+  compressionLevel?: object;
 }
 
 /**
@@ -38,6 +40,12 @@ export function exportContainerToPdf(
     title: options.title ?? 'Pixi → Skia scene',
     creator: 'pixi-skia-pdf',
     producer: 'Skia PDF backend (CanvasKit)',
+    // rootTag обязателен: обёртка MakePDFDocument в этой сборке заполняет
+    // поле _rootTag метаданных только при наличии rootTag, иначе embind падает
+    // с "Missing field: _rootTag". Корневой тег Document также делает PDF
+    // структурированным (тегированным).
+    rootTag: { type: 'Document' },
+    ...(options.compressionLevel ? { compressionLevel: options.compressionLevel } : {}),
   });
 
   const canvas = doc.beginPage(options.width, options.height);
