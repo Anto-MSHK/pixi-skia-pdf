@@ -52,6 +52,9 @@ code {
   border-radius: 12px;
   padding: 14px;
   flex: 1 1 380px;
+  /* min-width:0 позволяет flex-элементу сжиматься уже ширины канваса,
+     иначе два канваса 760px не влезают в ряд и переносятся в столбик. */
+  min-width: 0;
 }
 
 .stage__head {
@@ -95,6 +98,12 @@ code {
 
 .canvas-wrap canvas {
   display: block;
+  /* Канвасы рендерятся в фиксированном внутреннем разрешении (760×520 × dpr),
+     но на экране масштабируются под ширину панели с сохранением пропорций.
+     !important перебивает инлайн-размеры, которые Pixi проставляет при
+     autoDensity. Так панели Pixi и Skia стоят рядом (слева/справа). */
+  width: 100% !important;
+  height: auto !important;
 }
 
 .controls {
