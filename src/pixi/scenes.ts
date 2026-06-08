@@ -8,9 +8,13 @@
  * эти же обработчики переиспользуются для событий на Skia-канвасе.
  */
 import { Container, Graphics, Sprite, Texture } from 'pixi.js-legacy';
+import type { DisplayObject } from 'pixi.js-legacy';
 
 /** Колбэк логирования событий (общий для обоих канвасов). */
 export type EventLogger = (message: string) => void;
+
+/** Колбэк выбора объекта (для подсветки выделения на Skia-канвасе). */
+export type PickHandler = (node: DisplayObject) => void;
 
 interface SpriteWithImage extends Sprite {
   __image?: CanvasImageSource;
@@ -33,15 +37,23 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 /** Делает объект интерактивным и логирует pointerdown/pointerup. */
-function makeInteractive(node: Graphics | Sprite, label: string, log: EventLogger): void {
+function makeInteractive(
+  node: Graphics | Sprite,
+  label: string,
+  log: EventLogger,
+  onPick?: PickHandler,
+): void {
   node.eventMode = 'static';
   node.cursor = 'pointer';
-  node.on('pointerdown', () => log(`▼ pointerdown → ${label}`));
+  node.on('pointerdown', () => {
+    log(`▼ pointerdown → ${label}`);
+    onPick?.(node);
+  });
   node.on('pointerup', () => log(`▲ pointerup → ${label}`));
 }
 
 /** Сцена 1 — точный пример из технического задания. */
-function buildScene1(log: EventLogger): Container {
+function buildScene1(log: EventLogger, onPick?: PickHandler): Container {
   const mainContainer = new Container();
   const subContainer = new Container();
 
@@ -53,13 +65,13 @@ function buildScene1(log: EventLogger): Container {
   g1.beginFill(0xff0000).drawEllipse(0, 0, 200, 100).endFill();
   g1.position.set(260, 160);
   g1.angle = 30;
-  makeInteractive(g1, 'g1 (эллипс)', log);
+  makeInteractive(g1, 'g1 (эллипс)', log, onPick);
 
   g2.beginFill(0x0000ff).drawRect(-50, -75, 100, 150).endFill();
   g2.position.set(180, 120);
   g2.angle = 15;
   g2.scale.set(1.5, 1.7);
-  makeInteractive(g2, 'g2 (прямоугольник)', log);
+  makeInteractive(g2, 'g2 (прямоугольник)', log, onPick);
 
   g3.lineStyle(10, 0xffffff, 1).moveTo(0, 0).lineTo(150, 100);
   g3.angle = -20;
@@ -75,7 +87,12 @@ function buildScene1(log: EventLogger): Container {
 }
 
 /** Сцена 2 — спрайт (bitmap) + векторные фигуры вокруг. */
-function buildScene2(log: EventLogger, spriteTexture: Texture, spriteImage: CanvasImageSource): Container {
+function buildScene2(
+  log: EventLogger,
+  spriteTexture: Texture,
+  spriteImage: CanvasImageSource,
+  onPick?: PickHandler,
+): Container {
   const root = new Container();
 
   const sprite = new Sprite(spriteTexture) as SpriteWithImage;
@@ -84,7 +101,7 @@ function buildScene2(log: EventLogger, spriteTexture: Texture, spriteImage: Canv
   sprite.position.set(380, 260);
   sprite.angle = 12;
   sprite.scale.set(1.2);
-  makeInteractive(sprite, 'sprite (bitmap)', log);
+  makeInteractive(sprite, 'sprite (bitmap)', log, onPick);
 
   const ring = new Graphics();
   ring.lineStyle(8, 0x16a34a, 1).drawCircle(380, 260, 150);
@@ -98,30 +115,30 @@ function buildScene2(log: EventLogger, spriteTexture: Texture, spriteImage: Canv
     .closePath()
     .endFill();
   tri.position.set(60, 60);
-  makeInteractive(tri, 'tri (треугольник)', log);
+  makeInteractive(tri, 'tri (треугольник)', log, onPick);
 
   const rrect = new Graphics();
   rrect.beginFill(0x8b5cf6).drawRoundedRect(540, 360, 160, 110, 24).endFill();
   rrect.angle = -8;
-  makeInteractive(rrect, 'rrect (скругл. прямоуг.)', log);
+  makeInteractive(rrect, 'rrect (скругл. прямоуг.)', log, onPick);
 
   root.addChild(ring, sprite, tri, rrect);
   return root;
 }
 
 /** Сцена 3 — набор разных фигур и линий. */
-function buildScene3(log: EventLogger): Container {
+function buildScene3(log: EventLogger, onPick?: PickHandler): Container {
   const root = new Container();
 
   const c1 = new Graphics();
   c1.beginFill(0xef4444).drawCircle(0, 0, 70).endFill();
   c1.position.set(160, 160);
-  makeInteractive(c1, 'circle красный', log);
+  makeInteractive(c1, 'circle красный', log, onPick);
 
   const c2 = new Graphics();
   c2.beginFill(0x3b82f6, 0.7).drawCircle(0, 0, 90).endFill();
   c2.position.set(260, 220);
-  makeInteractive(c2, 'circle синий', log);
+  makeInteractive(c2, 'circle синий', log, onPick);
 
   const star = new Graphics();
   star.beginFill(0xfacc15);
@@ -141,7 +158,7 @@ function buildScene3(log: EventLogger): Container {
   star.closePath().endFill();
   star.position.set(540, 300);
   star.angle = 10;
-  makeInteractive(star, 'звезда', log);
+  makeInteractive(star, 'звезда', log, onPick);
 
   const wave = new Graphics();
   wave.lineStyle(6, 0x0ea5e9, 1).moveTo(40, 440);
@@ -154,15 +171,15 @@ function buildScene3(log: EventLogger): Container {
 }
 
 /** Собирает все сцены. Асинхронно — из-за загрузки PNG для спрайта. */
-export async function buildScenes(log: EventLogger): Promise<NamedScene[]> {
+export async function buildScenes(log: EventLogger, onPick?: PickHandler): Promise<NamedScene[]> {
   const pngUrl = `${import.meta.env.BASE_URL}assets/sample.png`;
   const image = await loadImage(pngUrl);
   const texture = Texture.from(image);
 
   return [
-    { name: 'Сцена 1 — пример из ТЗ', container: buildScene1(log) },
-    { name: 'Сцена 2 — спрайт + фигуры', container: buildScene2(log, texture, image) },
-    { name: 'Сцена 3 — фигуры и линии', container: buildScene3(log) },
+    { name: 'Сцена 1 — пример из ТЗ', container: buildScene1(log, onPick) },
+    { name: 'Сцена 2 — спрайт + фигуры', container: buildScene2(log, texture, image, onPick) },
+    { name: 'Сцена 3 — фигуры и линии', container: buildScene3(log, onPick) },
   ];
 }
 
@@ -170,7 +187,7 @@ export async function buildScenes(log: EventLogger): Promise<NamedScene[]> {
  * Добавляет в контейнер случайную фигуру или линию (для кнопки в UI).
  * Возвращает созданный объект (его тоже делаем интерактивным).
  */
-export function addRandomShape(container: Container, log: EventLogger): Graphics {
+export function addRandomShape(container: Container, log: EventLogger, onPick?: PickHandler): Graphics {
   const g = new Graphics();
   const rnd = (min: number, max: number) => min + Math.random() * (max - min);
   const color = Math.floor(Math.random() * 0xffffff);
@@ -198,7 +215,7 @@ export function addRandomShape(container: Container, log: EventLogger): Graphics
 
   g.position.set(rnd(80, 680), rnd(80, 440));
   g.angle = rnd(0, 360);
-  makeInteractive(g, `random#${container.children.length + 1}`, log);
+  makeInteractive(g, `random#${container.children.length + 1}`, log, onPick);
   container.addChild(g);
   return g;
 }

@@ -13,3 +13,7 @@ build-canvaskit/build.log
 
 # Артефакты Playwright MCP (скриншоты/снапшоты при отладке)
 .playwright-mcp/
+
+# Playwright
+test-results/
+playwright-report/

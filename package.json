@@ -8,12 +8,15 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "build:canvaskit": "bash build-canvaskit/run-build.sh"
+    "build:canvaskit": "bash build-canvaskit/run-build.sh",
+    "test": "playwright test",
+    "test:install": "playwright install chromium"
   },
   "dependencies": {
     "pixi.js-legacy": "7.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "canvaskit-wasm": "^0.39.1",
     "typescript": "^5.4.0",
     "vite": "^5.2.0"

@@ -14,5 +14,11 @@ export default defineConfig({
   server: {
     port: 5173,
     open: false,
+    // Не следим за гигантским чекаутом Skia из персистентной сборки.
+    watch: { ignored: ['**/build-canvaskit/work/**'] },
   },
+  // Ограничиваем скан зависимостей единственной точкой входа — иначе esbuild
+  // обходит все .html в дереве (включая тестовые HTML Skia/Dawn в
+  // build-canvaskit/work/) и сыплет предупреждениями о неразрешённых импортах.
+  optimizeDeps: { entries: ['index.html'] },
 });

@@ -81,10 +81,13 @@ export class SkiaPointerBridge {
   private readonly canvas: HTMLCanvasElement;
   private readonly onDown: (e: PointerEvent) => void;
   private readonly onUp: (e: PointerEvent) => void;
+  /** Вызывается с найденным объектом при pointerdown (для подсветки выделения). */
+  private readonly onPick?: (node: DisplayObject) => void;
 
-  constructor(canvas: HTMLCanvasElement, container: Container) {
+  constructor(canvas: HTMLCanvasElement, container: Container, onPick?: (node: DisplayObject) => void) {
     this.canvas = canvas;
     this.container = container;
+    this.onPick = onPick;
 
     const dispatch = (type: 'pointerdown' | 'pointerup', e: PointerEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -98,6 +101,7 @@ export class SkiaPointerBridge {
           global: new Point(x, y),
           target,
         } as never);
+        if (type === 'pointerdown') this.onPick?.(target);
       }
     };
 

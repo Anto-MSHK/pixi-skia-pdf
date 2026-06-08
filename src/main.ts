@@ -6,10 +6,11 @@
  * события и связывает UI: случайные фигуры, переключение сцен, экспорт в PDF.
  */
 import { Application, Container } from 'pixi.js-legacy';
+import type { DisplayObject } from 'pixi.js-legacy';
 import { loadCanvasKit, isPdfSupported } from './skia/canvaskitLoader';
 import { SkiaStage } from './skia/SkiaStage';
 import { SkiaPointerBridge } from './events/SkiaPointerBridge';
-import { exportContainerToPdf, downloadPdf } from './skia/pdfExport';
+import { exportContainerToPdf, exportScenesToPdf, downloadPdf } from './skia/pdfExport';
 import { buildScenes, addRandomShape, type NamedScene } from './pixi/scenes';
 
 const WIDTH = 760;
@@ -52,19 +53,35 @@ async function main(): Promise<void> {
   app.stage.eventMode = 'static';
   setStatus('pixi-status', 'готово', 'ok');
 
+  // Состояние рендера и подсветки выделения.
+  let skia: SkiaStage | null = null;
+  let current: Container;
+  let highlightNode: DisplayObject | null = null;
+  let highlightTimer: number | undefined;
+
+  const renderSkia = () => skia?.render(current, highlightNode);
+
+  // Клик по фигуре (на любом канвасе) подсвечивает её на Skia-канвасе:
+  // доказывает, что наш hit-test нашёл тот же объект, что и Pixi.
+  const onPick = (node: DisplayObject) => {
+    highlightNode = node;
+    if (highlightTimer) clearTimeout(highlightTimer);
+    highlightTimer = window.setTimeout(() => {
+      highlightNode = null;
+    }, 1200);
+    renderSkia();
+  };
+
   // 2. Сцены.
-  const scenes: NamedScene[] = await buildScenes(log);
+  const scenes: NamedScene[] = await buildScenes(log, onPick);
   let sceneIndex = 0;
-  let current: Container = scenes[sceneIndex].container;
+  current = scenes[sceneIndex].container;
   app.stage.addChild(current);
 
   // 3. Skia (CanvasKit).
-  let skia: SkiaStage | null = null;
   let pdfReady = false;
   const skiaCanvas = document.getElementById('skia-canvas') as HTMLCanvasElement;
-  const bridge = new SkiaPointerBridge(skiaCanvas, current);
-
-  const renderSkia = () => skia?.render(current);
+  const bridge = new SkiaPointerBridge(skiaCanvas, current, onPick);
 
   try {
     const ck = await loadCanvasKit();
@@ -98,11 +115,35 @@ async function main(): Promise<void> {
       }
     });
 
-    // Dev-only хук для e2e-проверки: возвращает байты PDF текущей сцены.
-    // В прод-сборку не попадает (вырезается по import.meta.env.DEV).
+    // Кнопка экспорта всех сцен в один многостраничный PDF.
+    const btnAll = document.getElementById('btn-export-all') as HTMLButtonElement;
+    if (!pdfReady) {
+      btnAll.disabled = true;
+      btnAll.title = btnPdf.title;
+    }
+    btnAll.addEventListener('click', () => {
+      try {
+        const bytes = exportScenesToPdf(ck, scenes, {
+          width: WIDTH,
+          height: HEIGHT,
+          title: 'Pixi → Skia — все сцены',
+        });
+        downloadPdf(bytes, 'pixi-skia-all-scenes.pdf');
+        log(`⬇ PDF всех сцен: ${scenes.length} стр., ${(bytes.length / 1024).toFixed(1)} КБ`);
+      } catch (err) {
+        log(`✗ Ошибка экспорта PDF: ${(err as Error).message}`);
+      }
+    });
+
+    // Dev-only хуки для e2e-проверки. В прод-сборку не попадают (import.meta.env.DEV).
     if (import.meta.env.DEV) {
-      (window as unknown as { __exportPdfBytes?: () => Uint8Array }).__exportPdfBytes =
-        exportCurrentPdf;
+      const w = window as unknown as {
+        __exportPdfBytes?: (uncompressed?: boolean) => Uint8Array;
+        __exportScenesBytes?: () => Uint8Array;
+      };
+      w.__exportPdfBytes = exportCurrentPdf;
+      w.__exportScenesBytes = () =>
+        exportScenesToPdf(ck, scenes, { width: WIDTH, height: HEIGHT });
     }
   } catch (err) {
     setStatus('skia-status', 'ошибка', 'warn');
@@ -114,6 +155,7 @@ async function main(): Promise<void> {
     app.stage.removeChild(current);
     sceneIndex = (index + scenes.length) % scenes.length;
     current = scenes[sceneIndex].container;
+    highlightNode = null; // сбрасываем выделение при смене сцены
     app.stage.addChild(current);
     bridge.setContainer(current);
     renderSkia();
@@ -122,7 +164,7 @@ async function main(): Promise<void> {
 
   // 5. UI.
   document.getElementById('btn-random')!.addEventListener('click', () => {
-    addRandomShape(current, log);
+    addRandomShape(current, log, onPick);
     renderSkia();
     log('＋ Добавлена случайная фигура');
   });
